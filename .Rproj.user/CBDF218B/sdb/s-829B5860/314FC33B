@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "if (!require(\"pacman\")) \n  install.packages(\"https://cran.r-project.org/src/contrib/Archive/pacman/pacman_0.4.6.tar.gz\",repo = NULL,type = \"source\") \n#https://cran.r-project.org/src/contrib/Archive/pacman/pacman_0.4.6.tar.gz\n# install.packages(\"https://cran.r-project.org/src/contrib/Archive/neuropsychology/neuropsychology_0.3.0.tar.gz\",repo = NULL,type = \"source\")\n# pacman::p_load(jpeg, png, ggplot2, grid, neuropsychology)\npacman::p_load(jpeg, png, ggplot2, grid)\n\nmydata <- data.frame(price = tapply(diamonds$price, diamonds$cut, max))\nmydata$cut <- rownames(mydata)\n# imgage <- jpeg::readJPEG(\"images/blackboard.jpg\")\nimage = png::readPNG(\"images/blackboard.png\")\n\nggplot(mydata, aes(cut, price, fill = -price)) +\n  ggtitle(\"Bar chart with background image\") +\n  scale_fill_continuous(guide = FALSE) +\n  annotation_custom(rasterGrob(image, \n                               width = unit(1,\"npc\"), \n                               height = unit(1,\"npc\")), \n                    -Inf, Inf, -Inf, Inf) +\n  geom_bar(stat=\"identity\", position = \"dodge\", width = .75, colour = 'white') +\n  scale_y_continuous('Price in $', limits = c(0, max(mydata$price) + max(mydata$price) / 4)) +\n  scale_x_discrete('Cut') +\n  geom_text(aes(label = round(price), ymax = 0), size = 7, fontface = 2, \n            colour = 'white', hjust = 0.5, vjust = -1)\n\nggplot(mydata, aes(cut, price, fill = -price)) +\n  theme_neuropsychology() +\n  ggtitle(\"Bar chart with background image\") +\n  scale_fill_continuous(guide = FALSE) +\n  annotation_custom(rasterGrob(image, \n                               width = unit(1,\"npc\"), \n                               height = unit(1,\"npc\")), \n                    -Inf, Inf, -Inf, Inf) +\n  geom_bar(stat=\"identity\", position = \"dodge\", width = .75, colour = 'white', alpha = 0.5) +\n  scale_y_continuous('Price in $', limits = c(0, max(mydata$price) + max(mydata$price) / 4)) +\n  scale_x_discrete('Cut') +\n  geom_text(aes(label = round(price), ymax = 0), size = 7, fontface = 2, \n            colour = 'white', hjust = 0.5, vjust = -1)\n",
+    "created" : 1547608590100.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4121916174",
+    "id" : "314FC33B",
+    "lastKnownWriteTime" : 1547610350,
+    "last_content_update" : 1547610350779,
+    "path" : "~/R_Projects/interestingR/Rfile/201801/0116_add_background_image_for_ggplot.R",
+    "project_path" : "Rfile/201801/0116_add_background_image_for_ggplot.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 17,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

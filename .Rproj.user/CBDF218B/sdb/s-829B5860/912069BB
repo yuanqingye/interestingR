@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "#This has a problem in the code\nsms_data<-read.csv(\"~/model_data/classification_SVM_Data.csv\",header = FALSE,stringsAsFactors = FALSE)\n# sms_data = readxl::read_xlsx(\"~/model_data/SVM_classification_Data.xlsx\")\nhead(sms_data)\n\nplot(c(-1,10), c(-1,10), type = \"n\", xlab = \"x\", ylab = \"y\", asp = 1)\nabline(a =12 , b = -5, col=3)\ntext(1,5, \"h(x)=0\", col = 2, adj = c(-.1, -.1))\ntext(2,3, \"h(x)>0,Ham\", col = 2, adj = c(-.1, -.1))\ntext(0,3, \"h(x)<0,Spam\", col = 2, adj = c(-.1, -.1))\n\nlibrary(tm)\ncolnames(sms_data) = c(\"type\",\"text\")\nsms_data$type<-factor(sms_data$type)\n\nsimply_text<-Corpus(VectorSource(sms_data$text))\n\ncleaned_corpus<-tm_map(simply_text, tolower)\ncleaned_corpus<-tm_map(cleaned_corpus,removeNumbers)\ncleaned_corpus<-tm_map(cleaned_corpus,removeWords,stopwords())\n#cleaned_corpus<-tm_map(cleaned_corpus,removePunctuation)\n#cleaned_corpus<-tm_map(cleaned_corpus,stripWhitespace)\n\nsms_dtm<-DocumentTermMatrix(cleaned_corpus)\nsms_train<-sms_dtm[1:4000]\nsms_test<-sms_dtm[4001:5574]\n#sms_train<-cleaned_corpus[1:4000]\n#sms_test<-cleaned_corpus[4001:5574]\n\nfreq_term=(findFreqTerms(sms_dtm,lowfreq=2))\nsms_freq_train<-DocumentTermMatrix(sms_train,  list(dictionary=freq_term))\nsms_freq_test<-DocumentTermMatrix(sms_test,list(dictionary=freq_term))\n\ny<-sms_data$type\ny_train<-y[1:4000]\ny_test<-y[4001:5574]\nlibrary(e1071)\ntuned_svm<-tune(svm, train.x=sms_train, train.y = y_train,kernel=\"linear\", range=list(cost=10^(-2:2), gamma=c(0.1, 0.25,0.5,0.75,1,2)) )\nprint(tuned_svm)\nadtm.m<-as.matrix(sms_train)\nadtm.df<-as.data.frame(adtm.m)\nsvm_good_model<-svm(y_train~., data=adtm.df, kernel=\"linear\",cost=tuned_svm$best.parameters$cost, gamma=tuned_svm$best.parameters$gamma)\n\nadtm.m_test<-as.matrix(sms_freq_test)\nadtm.df_test=as.data.frame(adtm.m_test)\ny_pred<-predict(svm_good_model,adtm.df_test)\ntable(y_test,y_pred)\n\nlibrary(gmodels)\nCrossTable(y_pred,y_test,prop.chisq = FALSE)",
+    "created" : 1547519842502.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1407442439",
+    "id" : "912069BB",
+    "lastKnownWriteTime" : 1547524331,
+    "last_content_update" : 1547524331938,
+    "path" : "~/R_Projects/interestingR/Rfile/201801/0115_linear_SVM.R",
+    "project_path" : "Rfile/201801/0115_linear_SVM.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 15,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

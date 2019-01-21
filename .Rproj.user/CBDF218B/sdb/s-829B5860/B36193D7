@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(lime)\nlibrary(text2vec)\nlibrary(xgboost)\n\n# Explaining a model based on text data\n# Purpose is to classify sentences from scientific publications\n# and find those where the team writes about their own work\n# (category OWNX in the provided dataset).\ndata(train_sentences)\ndata(test_sentences)\n# AIMX - The specific research goal of the paper\n# OWNX - The author's own work (methods, results, conclusions...)\n# CONT - Contrast, comparasion or critique of past work\n# BASE - Past work that provides the basis for the work in the article\n# MISC - Any other sentences.\n\nget_matrix <- function(text) {\n  it <- itoken(text, progressbar = FALSE)\n  create_dtm(it, vectorizer = hash_vectorizer())\n}\n\ndtm_train = get_matrix(train_sentences$text)\n\nxgb_model <- xgb.train(list(max_depth = 7, eta = 0.1, objective = \"binary:logistic\",\n                            eval_metric = \"error\", nthread = 1),\n                       xgb.DMatrix(dtm_train, label = train_sentences$class.text == \"OWNX\"),\n                       nrounds = 50)\n\nsentences <- head(test_sentences[test_sentences$class.text == \"OWNX\", \"text\"], 1)\nexplainer <- lime(train_sentences$text, xgb_model, get_matrix)\nexplanations <- explain(sentences, explainer, n_labels = 1, n_features = 2)\n\nprint(explanations)\n\n# Explaining a model based on tabular data\nlibrary(MASS)\niris_test <- iris[1, 1:4]\niris_train <- iris[-1, 1:4]\niris_lab <- iris[[5]][-1]\n# Create linear discriminant model on iris data\nmodel <- lda(iris_train, iris_lab)\n# Create explanation object\nexplanation <- lime(iris_train, model)\nexplain(iris_test, explanation, n_labels = 1, n_features = 2)\n\n# using ?model_support to see how to deal with different models",
+    "created" : 1534124864527.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3617833821",
+    "id" : "B36193D7",
+    "lastKnownWriteTime" : 1534149049,
+    "last_content_update" : 1534149049872,
+    "path" : "~/R_Projects/interestingR/Rfile/lime_example.R",
+    "project_path" : "Rfile/lime_example.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
