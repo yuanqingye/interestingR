@@ -2,3 +2,11 @@
 #if you don't have id_rsa.pub key; using file.exists("~/.ssh/id_rsa.pub") to check, then create one using rstudio.
 #copy your key to github website your account.
 #change settings in project Options fill in the current git repo path of your project there
+
+## MAKE FIGURES ####
+# By group
+data.plot = ggplot(data, aes(x = group, y = rt)) +
+  geom_boxplot()
+pdf("figures/data.pdf")
+data.plot
+dev.off()

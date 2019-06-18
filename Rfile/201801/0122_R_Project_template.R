@@ -1,0 +1,5 @@
+# install.packages('ProjectTemplate')
+library('ProjectTemplate')
+create.project('my-project')
+setwd('my-project')
+load.project()
