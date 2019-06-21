@@ -1,0 +1,135 @@
+#install.packages("tuneR")
+library(tuneR)
+
+originalSound <- readWave("~/model_data/G-scale.wav")
+play(originalSound) # opens Windows Media Player to play the sound. Beware that the window does not automatically close when the audio file is finished playing. You need to close the window before you can continue in R.
+
+library(tuneR)
+scaleNotesFreqs<- c(NA, NA, NA, 196.00, 196.00, NA, 220.0, NA, NA, 246.9, NA, 261.6, 261.6, NA, 293.7, 293.7, NA, 329.6, 329.6, NA, 370.0, 370.0, NA, 392.0, NA)
+scaleNotes <- noteFromFF(scaleNotesFreqs)
+transcribeMusic <- function(wavFile, widthSample = 4096, expNotes = NULL) {
+  #See details about the wavFile, plot it, and/or play it
+  #summary(wavFile)
+  plot(wavFile)
+  perioWav <- periodogram(wavFile, width = widthSample)
+  freqWav <- FF(perioWav)
+  noteWav <- noteFromFF(freqWav) 
+  melodyplot(perioWav, observed = noteWav, 
+             expected = expNotes, plotenergy = FALSE, 
+             main = Sys.Date())
+  #Print out notes names
+  noteWavNames <- noteWav[!is.na(noteWav)]
+  noteWavNames <- noteWavNames[1:21] # I limited the number of notes to 21 here - because that is the number of notes extracted from the G-Scale.wav file and to make comparisons later I need the extractions to be of the same length. 
+  print(noteWavNames)
+  print(notenames(noteWavNames))
+  return(noteWavNames)
+}
+
+transcribeMusic(originalSound, expNotes = scaleNotes)
+
+
+#install.packages("audio")
+library(audio)
+audiorec <- function(kk,f){  # kk: time length in seconds; f: filename
+  if(f %in% list.files()) 
+  {file.remove(f); print('The former file has been replaced');}
+  require(audio)
+  s11 <- rep(NA_real_, 16000*kk) # Samplingrate=16000
+  message("5 seconds..") # Counting down 5 seconds befor the recording starts
+  for (i in c(5:1)){
+    message(i)
+    Sys.sleep(1)
+  }
+  message("Recording starts now...")
+  record(s11, 16000, 1)  # record in mono mode
+  wait(kk)
+  save.wave(s11,f)
+  .rs.restartR() # As mentioned in the above cited post: recording with the audio package works once, but for some reason it will not continue to work afterwards unless the R session is restarted. For this reason I included a restart in this function. I am hoping to find a more elegant solution one day soon.
+}
+
+summary(originalSound)
+
+# Here I create a unique filename with the current date and time (to avoid overwriting earlier recordings)
+temp_date = gsub(":","-",as.character(Sys.time()))
+temp_filename = paste0(temp_date,"_recording.wav")
+# start the actual recording
+audiorec(6.3, temp_filename)
+### Wait for R to restart! ###
+
+testSound <- readWave(temp_filename)
+tuneR::play(testSound)
+results <- transcribeMusic(testSound, expNotes = scaleNotes)
+# the G-scale notes from the original sound in the same format:
+expected_notes <- c(-14,-14,-14,-12,-12,-10,-10,-9,-9,-9,-7,-7,-7,-5,-5,-5,-3,-3,-3,-2,-2)
+expected_notenames <- notenames(expected_notes)
+
+updatePerformance <- function(results){
+  files <- list.files()
+  if (("performance.csv" %in% files) == FALSE){
+    message("No performance csv existing yet - creating it now...")
+    dat <- as.data.frame(results)
+    names(dat) <- "noteWavNames"
+    dat$notenames <- notenames(results)
+    dat$expected <- expected_notes
+    dat$expected_notenames <- expected_notenames
+    dat$date <- as.character(Sys.Date())
+    dat$rownum <- row.names(dat)
+    dat$session <- 1 # every recording gets a unique session ID
+    performance <- dat
+    write.csv2(performance, "performance.csv", row.names = FALSE)
+    print("Done!")
+    return(performance)
+  } else {
+    performance <- read.csv2("performance.csv", stringsAsFactors = FALSE)
+    dat <- as.data.frame(results)
+    names(dat) <- "noteWavNames"
+    dat$notenames <- notenames(results)
+    dat$expected <- expected_notes
+    dat$expected_notenames <- expected_notenames
+    dat$date <- as.character(Sys.Date())
+    dat$rownum <- row.names(dat)
+    session_id <- performance[nrow(performance),"session"] + 1
+    dat$session <- session_id
+    performance <- rbind(performance, dat)
+    write.csv2(performance, "performance.csv", row.names = FALSE)
+    print("Done!")
+    return(performance)
+  }
+}
+
+# Now we can add the results of the recording to our performance csv:
+performance <- updatePerformance(results)
+
+plot(performance$noteWavNames, type = "l", col = "red") # the red line shows what I played
+lines(performance$expected,col="green") # the green line shows what was expected
+
+plotProgress <- function(performance, by){ # we can pass in the performance df and define the variable by which we want to calculate the accuracy (MSE)
+  progress <- c()
+  for (i in unique(performance[,by])){
+    print(i)
+    dat <- performance[performance[,by] == i,]
+    dat$res <- dat$expected-dat$noteWavNames
+    mse <- mean(dat$res^2)
+    print(mse)
+    progress <- c(progress,mse*-1) # To make the visualizations of the MSE a bit more intuitive to read - I am converting them from positive to negative numbers (So when a value is closer to 0, the line goes up instead of down.)
+  }
+  plot(progress, type = "l", yaxt="n", xaxt="n",ylim = c(min(progress),0), lwd = 2, col = "tomato", xlab = by, ylab = "accuracy", main = paste0("G-Scale Accuracy (",unique(performance$date[performance$session == min(performance$session)])," - ", unique(performance$date[performance$session == max(performance$session)]),")"))
+  axis(2, at = 0, labels="100%", las=2)
+  axis(1, at = c(1:length(unique(performance[,by]))),labels = unique(performance[,by]))
+  return(progress)
+}
+
+plotProgress(performance, by = "session")
+plotProgress(performance, by = "date")
+plotProgress(performance[performance$expected_notenames != "g",], by = "expected_notenames") # The G is often the most "off" note as it is the first and the last one and suffers the most from noise/irregularities. I decided to filter it out so the other notes can be inspected more properly. I can see the E is my most accurate note.
+
+progress <- plotProgress(performance, by = "session")
+library(ggplot2)
+progress <- as.data.frame(progress)
+progress$id <- unique(performance$session)
+ggplot(progress, aes(id,progress)) +
+  geom_point() +
+  geom_smooth() +
+  ggtitle(paste0("G-Scale Accuracy (",unique(performance$date[performance$session == min(performance$session)])," - ", unique(performance$date[performance$session == max(performance$session)]),")"))+
+  ylab("Accuracy (0 = 100% accurate)") +
+  xlab("Session")
